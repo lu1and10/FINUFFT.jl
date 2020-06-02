@@ -247,7 +247,6 @@ function finufft_exec(plan::Ptr{finufft_plan},
     return ret
 end
 
-"""
 function finufft_destroy(plan::Ptr{finufft_plan})
     ret = ccall( (:finufft_destroy, libfinufft),
                  Cint,
@@ -255,14 +254,13 @@ function finufft_destroy(plan::Ptr{finufft_plan})
                  plan
                  )
     check_ret(ret)
-    ccall( (:finufft_plan_free, libfinufft),
-           Cvoid,
-           (Ptr{finufft_plan}),
-           plan
-           )
+#    ccall( (:finufft_plan_free, libfinufft),
+#           Cvoid,
+#           (Ptr{finufft_plan}),
+#           plan
+#           )
     return ret
 end
-"""
 
 ### Simple Interfaces (allocate output)
 
