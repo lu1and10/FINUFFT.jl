@@ -179,7 +179,7 @@ end
 
 function finufft_makeplan(type::Integer,
                           dim::Integer,
-                          n_modes::Array{Integer},
+                          n_modes::Array{BIGINT},
                           iflag::Integer,
                           ntrans::Integer,
                           eps::Float64,
