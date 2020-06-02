@@ -13,6 +13,7 @@ export nufft3d1!, nufft3d2!, nufft3d3!
 export finufft_default_opts
 export nufft_opts
 export nufft_c_opts # backward-compability
+export finufft_makeplan
 
 ## External dependencies
 using Libdl
@@ -122,6 +123,17 @@ function finufft_default_opts()
            opts
            )
     return opts
+end
+
+mutable struct finufft_plan
+end
+
+function finufft_makeplan()
+    plan = ccall( (:finufft_plan, libfinufft),
+                 finufft_plan,
+                 ()
+                 )
+    return plan
 end
 
 ### Error handling
