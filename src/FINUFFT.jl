@@ -196,8 +196,9 @@ function finufft_makeplan(type::Integer,
                   Cint,
                   Cint,
                   Cdouble,
+                  Ref{finufft_plan},
                   Ref{nufft_opts}),
-                 type,dim,n_modes,iflag,ntrans,eps,opts
+                 type,dim,n_modes,iflag,ntrans,eps,plan,opts
                  )
     check_ret(ret)
     return plan
