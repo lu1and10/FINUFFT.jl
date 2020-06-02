@@ -14,6 +14,7 @@ export finufft_default_opts
 export nufft_opts
 export nufft_c_opts # backward-compability
 export finufft_makeplan
+export BIGINT
 
 ## External dependencies
 using Libdl
@@ -125,17 +126,6 @@ function finufft_default_opts()
     return opts
 end
 
-mutable struct finufft_plan
-end
-
-function finufft_makeplan()
-    plan = ccall( (:finufft_plan_alloc, libfinufft),
-                  Ptr{finufft_plan},
-                  ()
-                  )
-    return plan
-end
-
 ### Error handling
 const ERR_EPS_TOO_SMALL        = 1
 const ERR_MAXNALLOC            = 2
@@ -180,6 +170,39 @@ function check_ret(ret)
     end
     throw(FINUFFTError(ret, msg))
 end
+
+
+### Guru Interfaces
+
+mutable struct finufft_plan
+end
+
+function finufft_makeplan(type::Integer,
+                          dim::Integer,
+                          n_modes::Array{BIGINT},
+                          iflag::Integer,
+                          ntrans::Integer,
+                          eps::Float64,
+                          opts::nufft_opts=finufft_default_opts())
+    plan = ccall( (:finufft_plan_alloc, libfinufft),
+                  Ptr{finufft_plan},
+                  ()
+                  )
+    ret = ccall( (:finufft_makeplan, libfinufft),
+                 Cint,
+                 (Cint,
+                  Cint,
+                  Ref{BIGINT},
+                  Cint,
+                  Cint,
+                  Cdouble,
+                  Ref{nufft_opts}),
+                 type,dim,n_modes,iflag,ntrans,eps,opts
+                 )
+    check_ret(ret)
+    return plan
+end
+
 
 ### Simple Interfaces (allocate output)
 
