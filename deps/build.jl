@@ -56,11 +56,11 @@ end
 libfinufft = library_dependency("libfinufft")
 
 provides(Sources,
-        URI("https://github.com/flatironinstitute/finufft/archive/master.zip"),
+        URI("https://github.com/flatironinstitute/finufft/archive/guruInterface_v2.zip"),
          libfinufft,
-         unpacked_dir = "finufft-master")
+         unpacked_dir = "finufft-guruInterface_v2")
 
-rootdir = joinpath(BinDeps.srcdir(libfinufft), "finufft-master")
+rootdir = joinpath(BinDeps.srcdir(libfinufft), "finufft-guruInterface_v2")
 libname = "libfinufft.so"
 libfile = joinpath(BinDeps.libdir(libfinufft),libname)
 buildfile = joinpath(rootdir, "lib", libname)
