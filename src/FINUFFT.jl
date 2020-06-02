@@ -14,6 +14,9 @@ export finufft_default_opts
 export nufft_opts
 export nufft_c_opts # backward-compability
 export finufft_makeplan
+export finufft_setpts
+export finufft_exec
+export finufft_destroy
 export BIGINT
 
 ## External dependencies
@@ -204,6 +207,60 @@ function finufft_makeplan(type::Integer,
     return plan
 end
 
+function finufft_setpts(plan::Ptr{finufft_plan},
+                        M::Integer,
+                        xj::Array{Float64},
+                        yj::Array{Float64},
+                        zj::Array{Float64},
+                        N::Integer,
+                        s::Array{Float64},
+                        t::Array{Float64},
+                        u::Array{Float64})
+    ret = ccall( (:finufft_setpts, libfinufft),
+                 Cint,
+                 (Ptr{finufft_plan},
+                  BIGINT,
+                  Ref{Cdouble},
+                  Ref{Cdouble},
+                  Ref{Cdouble},
+                  BIGINT,
+                  Ref{Cdouble},
+                  Ref{Cdouble},
+                  Ref{Cdouble}),
+                 plan,M,xj,yj,zj,N,s,t,u
+                 )
+    check_ret(ret)
+    return ret
+end
+
+function finufft_exec(plan::Ptr{finufft_plan},
+                      weights::Array{ComplexF64},
+                      result::Array{ComplexF64})
+    ret = ccall( (:finufft_exec, libfinufft),
+                 Cint,
+                 (Ptr{finufft_plan},
+                  Ref{ComplexF64},
+                  Ref{ComplexF64}),
+                 plan,weights,result
+                 )
+    check_ret(ret)
+    return ret
+end
+
+function finufft_destroy(plan::Ptr{finufft_plan})
+    ret = ccall( (:finufft_destroy, libfinufft),
+                 Cint,
+                 (Ptr{finufft_plan}),
+                 plan
+                 )
+    check_ret(ret)
+    ccall( (:finufft_plan_free, libfinufft),
+           Cvoid,
+           (Ptr{finufft_plan}),
+           plan
+           )
+    return ret
+end
 
 ### Simple Interfaces (allocate output)
 
