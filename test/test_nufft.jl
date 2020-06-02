@@ -37,7 +37,8 @@ k3 = modevec(mu)
 myopts = finufft_default_opts()
 myopts.debug=1
 myopts.upsampfac=1.25
-plan = finufft_makeplan(1,1,[200;1;1],1,1,0.00001,myopts);
+plan = finufft_makeplan(1,1,[200;1;1],1,1,0.00001,myopts)
+#finufft_destroy(plan)
 
 @testset "NUFFT" begin
     ## 1D
