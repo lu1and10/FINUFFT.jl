@@ -56,7 +56,7 @@ end
 libfinufft = library_dependency("libfinufft")
 
 provides(Sources,
-        URI("https://github.com/flatironinstitute/finufft/archive/guruInterface_v2.zip"),
+        URI("https://github.com/lu1and10/finufft/archive/guruInterface_v2.zip"),
          libfinufft,
          unpacked_dir = "finufft-guruInterface_v2")
 

@@ -129,10 +129,10 @@ mutable struct finufft_plan
 end
 
 function finufft_makeplan()
-    plan = ccall( (:finufft_plan, libfinufft),
-                 finufft_plan,
-                 ()
-                 )
+    plan = ccall( (:finufft_plan_alloc, libfinufft),
+                  Ptr{finufft_plan},
+                  ()
+                  )
     return plan
 end
 
