@@ -34,11 +34,6 @@ k1 = modevec(ms)
 k2 = modevec(mt)
 k3 = modevec(mu)
 
-myopts = finufft_default_opts()
-myopts.debug=1
-myopts.upsampfac=1.25
-plan = finufft_makeplan(1,1,[200;1;1],1,1,0.00001,myopts)
-finufft_destroy(plan)
 
 @testset "NUFFT" begin
     ## 1D
@@ -62,6 +57,20 @@ finufft_destroy(plan)
             out2 = nufft1d1(x, c, 1, tol, ms)
             reldiff = norm(vec(out)-vec(out2), Inf) / norm(vec(out), Inf)
             @test reldiff < 1e-14
+
+            #guru1d1
+            fnull=Array{Float64}(undef,0)
+            outf = complex(zeros(ms))
+            myopts = finufft_default_opts()
+            myopts.debug=1
+            myopts.upsampfac=1.25
+            eps=1e-8
+            plan = finufft_makeplan(1,1,[ms;1;1],1,1,eps,myopts)
+            finufft_setpts(plan,nj,x,fnull,fnull,0,fnull,fnull,fnull)
+            finufft_exec(plan,c,outf)
+            finufft_destroy(plan)
+            relerr_guru = norm(vec(outf)-vec(ref), Inf) / norm(vec(outf), Inf)
+            @test relerr_guru < eps
         end
         
         # 1D2
