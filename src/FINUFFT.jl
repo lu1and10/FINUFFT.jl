@@ -258,7 +258,7 @@ function finufft_exec(plan::Ptr{finufft_plan},
                   )
     n_modes = Array{BIGINT}(undef,3)
     if type==1
-        ccall( (:get_nmodes, libfinnufft),
+        ccall( (:get_nmodes, libfinufft),
                Cvoid,
                (Ptr{finufft_plan},
                 Ref{BIGINT}),
