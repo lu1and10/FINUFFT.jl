@@ -139,6 +139,8 @@ const ERR_SPREAD_DIR           = 6
 const ERR_UPSAMPFAC_TOO_SMALL  = 7
 const HORNER_WRONG_BETA        = 8
 const ERR_NDATA_NOTVALID       = 9
+const ERR_TYPE_UNDEF           = 10
+const ERR_NDIM                 = 11
 
 struct FINUFFTError <: Exception
     errno::Cint
@@ -168,6 +170,10 @@ function check_ret(ret)
         msg = "upsampfac not a value with known Horner eval: currently 2.0 or 1.25 only"
     elseif ret==ERR_NDATA_NOTVALID
         msg = "ndata not valid (should be >= 1)"
+    elseif ret==ERR_TYPE_UNDEF
+        msg = "undefined type, type should be 1, 2, or 3"
+    elseif ret==ERR_NDIM
+        msg = "dimension should be 1, 2, or 3"
     else
         msg = "unknown error"
     end
@@ -234,17 +240,80 @@ function finufft_setpts(plan::Ptr{finufft_plan},
 end
 
 function finufft_exec(plan::Ptr{finufft_plan},
-                      weights::Array{ComplexF64},
-                      result::Array{ComplexF64})
-    ret = ccall( (:finufft_exec, libfinufft),
-                 Cint,
-                 (Ptr{finufft_plan},
-                  Ref{ComplexF64},
-                  Ref{ComplexF64}),
-                 plan,weights,result
-                 )
+                      input::Array{ComplexF64})
+    type = ccall( (:get_type, libfinufft),
+                  Cint,
+                  (Ptr{finufft_plan},),
+                  plan
+                  )
+    ntrans = ccall( (:get_ntransf, libfinufft),
+                    Cint,
+                    (Ptr{finufft_plan},),
+                    plan
+                    )
+    ndim = ccall( (:get_ndims, libfinufft),
+                  Cint,
+                  (Ptr{finufft_plan},),
+                  plan
+                  )
+    n_modes = Array{BIGINT}(undef,3)
+    if type==1
+        ccall( (:get_nmodes, libfinnufft),
+               Cvoid,
+               (Ptr{finufft_plan},
+                Ref{BIGINT}),
+               plan,n_modes
+               )
+        if ndim==1
+            output = Array{ComplexF64}(undef,n_modes[1],ntrans)
+        elseif ndim==2
+            output = Array{ComplexF64}(undef,n_modes[1],n_modes[2],ntrans)
+        elseif ndim==3
+            output = Array{ComplexF64}(undef,n_modes[1],n_modes[2],n_modes[3],ntrans)
+        else
+            ret = ERR_NDIM
+            check_ret(ret)
+        end
+        ret = ccall( (:finufft_exec, libfinufft),
+                     Cint,
+                     (Ptr{finufft_plan},
+                      Ref{ComplexF64},
+                      Ref{ComplexF64}),
+                     plan,input,output
+                     )
+    elseif type==2
+        nj = ccall( (:get_nj, libfinufft),
+                    BIGINT,
+                    (Ptr{finufft_plan},),
+                    plan
+                    )
+        output = Array{ComplexF64}(undef,nj,ntrans)
+        ret = ccall( (:finufft_exec, libfinufft),
+                     Cint,
+                     (Ptr{finufft_plan},
+                      Ref{ComplexF64},
+                      Ref{ComplexF64}),
+                     plan,output,input
+                     )
+    elseif type==3
+        nk = ccall( (:get_nk, libfinufft),
+                    BIGINT,
+                    (Ptr{finufft_plan},),
+                    plan
+                    )
+        output = Array{ComplexF64}(undef,nk,ntrans)
+        ret = ccall( (:finufft_exec, libfinufft),
+                     Cint,
+                     (Ptr{finufft_plan},
+                      Ref{ComplexF64},
+                      Ref{ComplexF64}),
+                     plan,input,output
+                     )
+    else
+        ret = ERR_TYPE_UNDEF
+    end
     check_ret(ret)
-    return ret
+    return output
 end
 
 function finufft_destroy(plan::Ptr{finufft_plan})
