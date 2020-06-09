@@ -283,7 +283,8 @@ function nufft1d1(xj::Array{Float64},
                   eps::Float64,
                   ms::Integer,
                   opts::nufft_opts=finufft_default_opts())
-    fk = Array{ComplexF64}(undef, ms)
+    ntrans = convert(Int64, round(length(cj)/length(xj), digits=0))
+    fk = Array{ComplexF64}(undef, ms, ntrans)
     nufft1d1!(xj, cj, iflag, eps, fk, opts)
     return fk
 end
@@ -309,7 +310,8 @@ function nufft2d1(xj      :: Array{Float64},
                   ms      :: Integer,
                   mt      :: Integer,                   
                   opts    :: nufft_opts = finufft_default_opts())
-    fk = Array{ComplexF64}(undef, ms, mt)
+    ntrans = convert(Int64, round(length(cj)/length(xj), digits=0))
+    fk = Array{ComplexF64}(undef, ms, mt, ntrans)
     nufft2d1!(xj, yj, cj, iflag, eps, fk, opts)
     return fk
 end
@@ -339,7 +341,8 @@ function nufft3d1(xj      :: Array{Float64},
                   mt      :: Integer,
                   mu      :: Integer,                                     
                   opts    :: nufft_opts = finufft_default_opts())
-    fk = Array{ComplexF64}(undef, ms, mt, mu)
+    ntrans = convert(Int64, round(length(cj)/length(xj), digits=0))
+    fk = Array{ComplexF64}(undef, ms, mt, mu, ntrans)
     nufft3d1!(xj, yj, zj, cj, iflag, eps, fk, opts)
     return fk
 end
@@ -363,7 +366,14 @@ function nufft1d2(xj      :: Array{Float64},
                   fk      :: Array{ComplexF64},
                   opts    :: nufft_opts = finufft_default_opts())
     nj = length(xj)
-    cj = Array{ComplexF64}(undef, nj)
+    ndim = ndims(fk)
+    @assert ndim==1 || ndim==2
+    if ndim==1
+       ntrans = 1
+    else
+       ms, ntrans = size(fk)
+    end
+    cj = Array{ComplexF64}(undef, nj, ntrans)
     nufft1d2!(xj, cj, iflag, eps, fk, opts)
     return cj
 end
@@ -386,7 +396,14 @@ function nufft2d2(xj      :: Array{Float64},
                   fk      :: Array{ComplexF64},
                   opts    :: nufft_opts = finufft_default_opts())
     nj = length(xj)
-    cj = Array{ComplexF64}(undef, nj)
+    ndim = ndims(fk)
+    @assert ndim==2 || ndim==3
+    if ndim==2
+       ntrans = 1
+    else
+       ms, mt, ntrans = size(fk)
+    end
+    cj = Array{ComplexF64}(undef, nj, ntrans)
     nufft2d2!(xj, yj, cj, iflag, eps, fk, opts)
     return cj
 end
@@ -411,7 +428,14 @@ function nufft3d2(xj      :: Array{Float64},
                   fk      :: Array{ComplexF64},
                   opts    :: nufft_opts = finufft_default_opts())
     nj = length(xj)
-    cj = Array{ComplexF64}(undef, nj)
+    ndim = ndims(fk)
+    @assert ndim==3 || ndim==4
+    if ndim==3
+       ntrans = 1
+    else
+       ms, mt, mu, ntrans = size(fk)
+    end
+    cj = Array{ComplexF64}(undef, nj, ntrans)
     nufft3d2!(xj, yj, zj, cj, iflag, eps, fk, opts)
     return cj
 end
@@ -436,10 +460,11 @@ function nufft1d3(xj      :: Array{Float64},
                   eps     :: Float64,
                   sk      :: Array{Float64},
                   opts    :: nufft_opts = finufft_default_opts())
+    ntrans = convert(Int64, round(length(cj)/length(xj), digits=0))
     nj = length(xj)
-    @assert length(cj)==nj        
+    @assert length(cj)==nj*ntrans
     nk = length(sk)
-    fk = Array{ComplexF64}(undef, nk)
+    fk = Array{ComplexF64}(undef, nk, ntrans)
     nufft1d3!(xj, cj, iflag, eps, sk, fk, opts);
     return fk
 end
@@ -465,10 +490,11 @@ function nufft2d3(xj      :: Array{Float64},
                   sk      :: Array{Float64},
                   tk      :: Array{Float64},                  
                   opts    :: nufft_opts = finufft_default_opts())
+    ntrans = convert(Int64, round(length(cj)/length(xj), digits=0))
     nj = length(xj)
-    @assert length(cj)==nj        
+    @assert length(cj)==nj*ntrans
     nk = length(sk)
-    fk = Array{ComplexF64}(undef, nk)
+    fk = Array{ComplexF64}(undef, nk, ntrans)
     nufft2d3!(xj, yj, cj, iflag, eps, sk, tk, fk, opts);
     return fk
 end
@@ -498,10 +524,11 @@ function nufft3d3(xj      :: Array{Float64},
                   tk      :: Array{Float64},
                   uk      :: Array{Float64},                  
                   opts    :: nufft_opts = finufft_default_opts())
+    ntrans = convert(Int64, round(length(cj)/length(xj), digits=0))
     nj = length(xj)
-    @assert length(cj)==nj        
+    @assert length(cj)==nj*ntrans
     nk = length(sk)
-    fk = Array{ComplexF64}(undef, nk)
+    fk = Array{ComplexF64}(undef, nk, ntrans)
     nufft3d3!(xj, yj, zj, cj, iflag, eps, sk, tk, uk, fk, opts);
     return fk
 end
@@ -529,23 +556,49 @@ function nufft1d1!(xj      :: Array{Float64},
                    fk      :: Array{ComplexF64},
                    opts    :: nufft_opts = finufft_default_opts())
     nj = length(xj) 
-    @assert length(cj)==nj        
-    ms = length(fk)    
+    ndim = ndims(fk)
+    @assert ndim==1 || ndim==2
+    if ndim==1
+        ntrans = 1
+        ms = length(fk)
+    else
+        ms, ntrans = size(fk)
+    end
+    @assert length(cj)==nj*ntrans
     # Calling interface
     # int finufft1d1(BIGINT nj,FLT* xj,CPX* cj,int iflag,FLT eps,BIGINT ms,
     # 	       CPX* fk, nufft_opts* opts);
-    ret = ccall( (:finufft1d1, libfinufft),
-                 Cint,
-                 (BIGINT,
-                  Ref{Cdouble},
-                  Ref{ComplexF64},
-                  Cint,
-                  Cdouble,
-                  BIGINT,
-                  Ref{ComplexF64},
-                  Ref{nufft_opts}),
-                 nj, xj, cj, iflag, eps, ms, fk, opts
-                 )
+    # or
+    # int finufft1d1many(int ntrans, BIGINT nj,FLT* xj,CPX* cj,int iflag,FLT eps,BIGINT ms,
+    # 	       CPX* fk, nufft_opts* opts);
+    if ndim==1
+        ret = ccall( (:finufft1d1, libfinufft),
+                     Cint,
+                     (BIGINT,
+                      Ref{Cdouble},
+                      Ref{ComplexF64},
+                      Cint,
+                      Cdouble,
+                      BIGINT,
+                      Ref{ComplexF64},
+                      Ref{nufft_opts}),
+                     nj, xj, cj, iflag, eps, ms, fk, opts
+                     )
+    else
+        ret = ccall( (:finufft1d1many, libfinufft),
+                     Cint,
+                     (Cint,
+                      BIGINT,
+                      Ref{Cdouble},
+                      Ref{ComplexF64},
+                      Cint,
+                      Cdouble,
+                      BIGINT,
+                      Ref{ComplexF64},
+                      Ref{nufft_opts}),
+                     ntrans, nj, xj, cj, iflag, eps, ms, fk, opts
+                     )
+    end
     check_ret(ret)
 end
 
@@ -568,23 +621,49 @@ function nufft1d2!(xj      :: Array{Float64},
                    fk      :: Array{ComplexF64},
                    opts    :: nufft_opts = finufft_default_opts())
     nj = length(xj)
-    @assert length(cj)==nj        
-    ms = length(fk)    
+    ndim = ndims(fk)
+    @assert ndim==1 || ndim==2
+    if ndim==1
+        ntrans = 1
+        ms = length(fk) 
+    else
+        ms, ntrans = size(fk)
+    end
+    @assert length(cj)==nj*ntrans
     # Calling interface
     # int finufft1d2(BIGINT nj,FLT* xj,CPX* cj,int iflag,FLT eps,BIGINT ms,
     #                CPX* fk, nufft_opts* opts);
-    ret = ccall( (:finufft1d2, libfinufft),
-                 Cint,
-                 (BIGINT,
-                  Ref{Cdouble},
-                  Ref{ComplexF64},
-                  Cint,
-                  Cdouble,
-                  BIGINT,
-                  Ref{ComplexF64},
-                  Ref{nufft_opts}),
-                 nj, xj, cj, iflag, eps, ms, fk, opts
-                 )
+    # or
+    # int finufft1d2many(int ntrans, BIGINT nj,FLT* xj,CPX* cj,int iflag,FLT eps,BIGINT ms,
+    #                CPX* fk, nufft_opts* opts);
+    if ntrans==1
+        ret = ccall( (:finufft1d2, libfinufft),
+                     Cint,
+                     (BIGINT,
+                      Ref{Cdouble},
+                      Ref{ComplexF64},
+                      Cint,
+                      Cdouble,
+                      BIGINT,
+                      Ref{ComplexF64},
+                      Ref{nufft_opts}),
+                     nj, xj, cj, iflag, eps, ms, fk, opts
+                     )
+    else
+        ret = ccall( (:finufft1d2many, libfinufft),
+                     Cint,
+                     (Cint,
+                      BIGINT,
+                      Ref{Cdouble},
+                      Ref{ComplexF64},
+                      Cint,
+                      Cdouble,
+                      BIGINT,
+                      Ref{ComplexF64},
+                      Ref{nufft_opts}),
+                     ntrans, nj, xj, cj, iflag, eps, ms, fk, opts
+                     )
+    end
     check_ret(ret)    
 end
 
@@ -609,24 +688,51 @@ function nufft1d3!(xj      :: Array{Float64},
                    fk      :: Array{ComplexF64},
                    opts    :: nufft_opts = finufft_default_opts())
     nj = length(xj)
-    @assert length(cj)==nj        
+    ndim = ndims(fk)
+    @assert ndim==1 || ndim==2
+    if ndim==1
+        ntrans = 1
+        nk = length(fk)
+    else
+        nk, ntrans = size(fk)
+    end
+    @assert length(cj)==nj*ntrans
     nk = length(sk)
-    @assert length(fk)==nk
+    @assert length(fk)==nk*ntrans
     # Calling interface
     # int finufft1d3(BIGINT nj,FLT* x,CPX* c,int iflag,FLT eps,BIGINT nk, FLT* s, CPX* f, nufft_opts* opts);
-    ret = ccall( (:finufft1d3, libfinufft),
-                 Cint,
-                 (BIGINT,
-                  Ref{Cdouble},
-                  Ref{ComplexF64},
-                  Cint,
-                  Cdouble,
-                  BIGINT,
-                  Ref{Cdouble},            
-                  Ref{ComplexF64},
-                  Ref{nufft_opts}),
-                 nj, xj, cj, iflag, eps, nk, sk, fk, opts
-                 )
+    # or
+    # int finufft1d3many(int ntrans, BIGINT nj,FLT* x,CPX* c,int iflag,FLT eps,BIGINT nk, FLT* s, CPX* f, nufft_opts* opts);
+    if ntrans==1
+        ret = ccall( (:finufft1d3, libfinufft),
+                     Cint,
+                     (BIGINT,
+                      Ref{Cdouble},
+                      Ref{ComplexF64},
+                      Cint,
+                      Cdouble,
+                      BIGINT,
+                      Ref{Cdouble},            
+                      Ref{ComplexF64},
+                      Ref{nufft_opts}),
+                     nj, xj, cj, iflag, eps, nk, sk, fk, opts
+                     )
+    else
+        ret = ccall( (:finufft1d3many, libfinufft),
+                     Cint,
+                     (Cint,
+                      BIGINT,
+                      Ref{Cdouble},
+                      Ref{ComplexF64},
+                      Cint,
+                      Cdouble,
+                      BIGINT,
+                      Ref{Cdouble},            
+                      Ref{ComplexF64},
+                      Ref{nufft_opts}),
+                     ntrans, nj, xj, cj, iflag, eps, nk, sk, fk, opts
+                     )
+    end
     check_ret(ret)
 end
 
@@ -653,26 +759,54 @@ function nufft2d1!(xj      :: Array{Float64},
                    fk      :: Array{ComplexF64},
                    opts    :: nufft_opts = finufft_default_opts())
     nj = length(xj)
+    ndim = ndims(fk)
+    @assert ndim==2 || ndim==3
+    if ndim==2
+        ntrans = 1
+        ms, mt = size(fk)
+    else
+        ms, mt, ntrans = size(fk)
+    end
     @assert length(yj)==nj
-    @assert length(cj)==nj    
-    ms, mt = size(fk)    
+    @assert length(cj)==nj*ntrans
     # Calling interface
     # int finufft2d1(BIGINT nj,FLT* xj,FLT *yj,CPX* cj,int iflag,FLT eps,
     #                BIGINT ms, BIGINT mt, CPX* fk, nufft_opts* opts);
-    ret = ccall( (:finufft2d1, libfinufft),
-                 Cint,
-                 (BIGINT,
-                  Ref{Cdouble},
-                  Ref{Cdouble},            
-                  Ref{ComplexF64},
-                  Cint,
-                  Cdouble,
-                  BIGINT,
-                  BIGINT,            
-                  Ref{ComplexF64},
-                  Ref{nufft_opts}),
-                 nj, xj, yj, cj, iflag, eps, ms, mt, fk, opts
-                 )
+    # or
+    # int finufft2d1many(int ntrans, BIGINT nj,FLT* xj,FLT *yj,CPX* cj,int iflag,FLT eps,
+    #                BIGINT ms, BIGINT mt, CPX* fk, nufft_opts* opts);
+    if ntrans==1
+        ret = ccall( (:finufft2d1, libfinufft),
+                     Cint,
+                     (BIGINT,
+                      Ref{Cdouble},
+                      Ref{Cdouble},            
+                      Ref{ComplexF64},
+                      Cint,
+                      Cdouble,
+                      BIGINT,
+                      BIGINT,            
+                      Ref{ComplexF64},
+                      Ref{nufft_opts}),
+                     nj, xj, yj, cj, iflag, eps, ms, mt, fk, opts
+                     )
+    else
+        ret = ccall( (:finufft2d1many, libfinufft),
+                     Cint,
+                     (Cint,
+                      BIGINT,
+                      Ref{Cdouble},
+                      Ref{Cdouble},            
+                      Ref{ComplexF64},
+                      Cint,
+                      Cdouble,
+                      BIGINT,
+                      BIGINT,            
+                      Ref{ComplexF64},
+                      Ref{nufft_opts}),
+                     ntrans, nj, xj, yj, cj, iflag, eps, ms, mt, fk, opts
+                     )
+    end
     check_ret(ret)
 end
 
@@ -697,26 +831,54 @@ function nufft2d2!(xj      :: Array{Float64},
                    fk      :: Array{ComplexF64},
                    opts    :: nufft_opts = finufft_default_opts())
     nj = length(xj)
+    ndim = ndims(fk)
+    @assert ndim==2 || ndim==3
+    if ndim==2
+        ntrans = 1
+        ms, mt = size(fk)
+    else
+        ms, mt, ntrans =  size(fk)
+    end
     @assert length(yj)==nj
-    @assert length(cj)==nj    
-    ms, mt = size(fk)    
+    @assert length(cj)==nj*ntrans
     # Calling interface
     # int finufft2d2(BIGINT nj,FLT* xj,FLT *yj,CPX* cj,int iflag,FLT eps,
     #                BIGINT ms, BIGINT mt, CPX* fk, nufft_opts* opts);
-    ret = ccall( (:finufft2d2, libfinufft),
-                 Cint,
-                 (BIGINT,
-                  Ref{Cdouble},
-                  Ref{Cdouble},            
-                  Ref{ComplexF64},
-                  Cint,
-                  Cdouble,
-                  BIGINT,
-                  BIGINT,            
-                  Ref{ComplexF64},
-                  Ref{nufft_opts}),
-                 nj, xj, yj, cj, iflag, eps, ms, mt, fk, opts
-                 )
+    # or
+    # int finufft2d2many(int ntrans, BIGINT nj,FLT* xj,FLT *yj,CPX* cj,int iflag,FLT eps,
+    #                BIGINT ms, BIGINT mt, CPX* fk, nufft_opts* opts);
+    if ntrans==1
+        ret = ccall( (:finufft2d2, libfinufft),
+                     Cint,
+                     (BIGINT,
+                      Ref{Cdouble},
+                      Ref{Cdouble},            
+                      Ref{ComplexF64},
+                      Cint,
+                      Cdouble,
+                      BIGINT,
+                      BIGINT,            
+                      Ref{ComplexF64},
+                      Ref{nufft_opts}),
+                     nj, xj, yj, cj, iflag, eps, ms, mt, fk, opts
+                     )
+    else
+        ret = ccall( (:finufft2d2many, libfinufft),
+                     Cint,
+                     (Cint,
+                      BIGINT,
+                      Ref{Cdouble},
+                      Ref{Cdouble},            
+                      Ref{ComplexF64},
+                      Cint,
+                      Cdouble,
+                      BIGINT,
+                      BIGINT,            
+                      Ref{ComplexF64},
+                      Ref{nufft_opts}),
+                     ntrans, nj, xj, yj, cj, iflag, eps, ms, mt, fk, opts
+                     )
+    end
     check_ret(ret)
 end
 
@@ -744,28 +906,58 @@ function nufft2d3!(xj      :: Array{Float64},
                    fk      :: Array{ComplexF64},
                    opts    :: nufft_opts = finufft_default_opts())
     nj = length(xj)
+    ndim =  ndims(fk)
+    @assert ndim==1 || ndim==2
+    if ndim==1
+        ntrans = 1
+        nk = length(fk)
+    else
+        nk, ntrans = size(fk)
+    end
     @assert length(yj)==nj
-    @assert length(cj)==nj
+    @assert length(cj)==nj*ntrans
     nk = length(sk)
     @assert length(tk)==nk
-    @assert length(fk)==nk    
+    @assert length(fk)==nk*ntrans
     # Calling interface
     # int finufft2d3(BIGINT nj,FLT* x,FLT *y,CPX* cj,int iflag,FLT eps,BIGINT nk, FLT* s, FLT* t, CPX* fk, nufft_opts* opts);    
-    ret = ccall( (:finufft2d3, libfinufft),
-                 Cint,
-                 (BIGINT,
-                  Ref{Cdouble},
-                  Ref{Cdouble},            
-                  Ref{ComplexF64},
-                  Cint,
-                  Cdouble,
-                  BIGINT,
-                  Ref{Cdouble},
-                  Ref{Cdouble},            
-                  Ref{ComplexF64},
-                  Ref{nufft_opts}),
-                 nj, xj, yj, cj, iflag, eps, nk, sk, tk, fk, opts
-                 )
+    # or
+    # int finufft2d3many(int ntrans, BIGINT nj,FLT* x,FLT *y,CPX* cj,int iflag,FLT eps,
+    #                    BIGINT nk, FLT* s, FLT* t, CPX* fk, nufft_opts* opts);    
+    if ntrans==1
+        ret = ccall( (:finufft2d3, libfinufft),
+                     Cint,
+                     (BIGINT,
+                      Ref{Cdouble},
+                      Ref{Cdouble},            
+                      Ref{ComplexF64},
+                      Cint,
+                      Cdouble,
+                      BIGINT,
+                      Ref{Cdouble},
+                      Ref{Cdouble},            
+                      Ref{ComplexF64},
+                      Ref{nufft_opts}),
+                     nj, xj, yj, cj, iflag, eps, nk, sk, tk, fk, opts
+                     )
+    else
+        ret = ccall( (:finufft2d3many, libfinufft),
+                     Cint,
+                     (Cint,
+                      BIGINT,
+                      Ref{Cdouble},
+                      Ref{Cdouble},            
+                      Ref{ComplexF64},
+                      Cint,
+                      Cdouble,
+                      BIGINT,
+                      Ref{Cdouble},
+                      Ref{Cdouble},            
+                      Ref{ComplexF64},
+                      Ref{nufft_opts}),
+                     ntrans, nj, xj, yj, cj, iflag, eps, nk, sk, tk, fk, opts
+                     )
+    end
     check_ret(ret)
 end
 
@@ -793,29 +985,59 @@ function nufft3d1!(xj      :: Array{Float64},
                    fk      :: Array{ComplexF64},
                    opts    :: nufft_opts = finufft_default_opts())
     nj = length(xj)
+    ndim = ndims(fk)
+    @assert ndim==3 || ndim==4
+    if ndim==3
+        ntrans = 1
+        ms, mt, mu = size(fk)
+    else
+        ms, mt, mu, ntrans = size(fk)
+    end
     @assert length(yj)==nj
     @assert length(zj)==nj    
-    @assert length(cj)==nj    
-    ms, mt, mu = size(fk)    
+    @assert length(cj)==nj*ntrans
     # Calling interface
     # int finufft3d1(BIGINT nj,FLT* xj,FLT *yj,FLT *zj,CPX* cj,int iflag,FLT eps,
     # 	       BIGINT ms, BIGINT mt, BIGINT mu, CPX* fk, nufft_opts* opts);
-    ret = ccall( (:finufft3d1, libfinufft),
-                 Cint,
-                 (BIGINT,
-                  Ref{Cdouble},
-                  Ref{Cdouble},
-                  Ref{Cdouble},                
-                  Ref{ComplexF64},
-                  Cint,
-                  Cdouble,
-                  BIGINT,
-                  BIGINT,
-                  BIGINT,
-                  Ref{ComplexF64},
-                  Ref{nufft_opts}),
-                 nj, xj, yj, zj, cj, iflag, eps, ms, mt, mu, fk, opts
-                 )
+    # or
+    # int finufft3d1many(int ntrans, BIGINT nj,FLT* xj,FLT *yj,FLT *zj,CPX* cj,int iflag,FLT eps,
+    # 	       BIGINT ms, BIGINT mt, BIGINT mu, CPX* fk, nufft_opts* opts);
+    if ntrans==1
+        ret = ccall( (:finufft3d1, libfinufft),
+                     Cint,
+                     (BIGINT,
+                      Ref{Cdouble},
+                      Ref{Cdouble},
+                      Ref{Cdouble},
+                      Ref{ComplexF64},
+                      Cint,
+                      Cdouble,
+                      BIGINT,
+                      BIGINT,
+                      BIGINT,
+                      Ref{ComplexF64},
+                      Ref{nufft_opts}),
+                     nj, xj, yj, zj, cj, iflag, eps, ms, mt, mu, fk, opts
+                     )
+    else
+        ret = ccall( (:finufft3d1many, libfinufft),
+                     Cint,
+                     (Cint,
+                      BIGINT,
+                      Ref{Cdouble},
+                      Ref{Cdouble},
+                      Ref{Cdouble},
+                      Ref{ComplexF64},
+                      Cint,
+                      Cdouble,
+                      BIGINT,
+                      BIGINT,
+                      BIGINT,
+                      Ref{ComplexF64},
+                      Ref{nufft_opts}),
+                     ntrans, nj, xj, yj, zj, cj, iflag, eps, ms, mt, mu, fk, opts
+                     )
+    end
     check_ret(ret)
 end
 
@@ -841,29 +1063,59 @@ function nufft3d2!(xj      :: Array{Float64},
                    fk      :: Array{ComplexF64},
                    opts    :: nufft_opts = finufft_default_opts())
     nj = length(xj)
+    ndim = ndims(fk)
+    @assert ndim==3 || ndim==4
+    if ndim==3
+        ntrans = 1
+        ms, mt, mu= size(fk)
+    else
+        ms, mt, mu, ntrans = size(fk)
+    end
     @assert length(yj)==nj
     @assert length(zj)==nj    
-    @assert length(cj)==nj    
-    ms, mt, mu = size(fk)    
+    @assert length(cj)==nj*ntrans
     # Calling interface
     # int finufft3d2(BIGINT nj,FLT* xj,FLT *yj,FLT *zj,CPX* cj,int iflag,FLT eps,
     #                BIGINT ms, BIGINT mt, BIGINT mu, CPX* fk, nufft_opts* opts);
-    ret = ccall( (:finufft3d2, libfinufft),
-                 Cint,
-                 (BIGINT,
-                  Ref{Cdouble},
-                  Ref{Cdouble},            
-                  Ref{Cdouble},            
-                  Ref{ComplexF64},
-                  Cint,
-                  Cdouble,
-                  BIGINT,
-                  BIGINT,
-                  BIGINT,
-                  Ref{ComplexF64},
-                  Ref{nufft_opts}),
-                 nj, xj, yj, zj, cj, iflag, eps, ms, mt, mu, fk, opts
-                 )
+    # or
+    # int finufft3d2many(int ntrans, BIGINT nj,FLT* xj,FLT *yj,FLT *zj,CPX* cj,int iflag,FLT eps,
+    #                BIGINT ms, BIGINT mt, BIGINT mu, CPX* fk, nufft_opts* opts);
+    if ntrans==1
+        ret = ccall( (:finufft3d2, libfinufft),
+                     Cint,
+                     (BIGINT,
+                      Ref{Cdouble},
+                      Ref{Cdouble},            
+                      Ref{Cdouble},            
+                      Ref{ComplexF64},
+                      Cint,
+                      Cdouble,
+                      BIGINT,
+                      BIGINT,
+                      BIGINT,
+                      Ref{ComplexF64},
+                      Ref{nufft_opts}),
+                     nj, xj, yj, zj, cj, iflag, eps, ms, mt, mu, fk, opts
+                     )
+    else
+        ret = ccall( (:finufft3d2many, libfinufft),
+                     Cint,
+                     (Cint,
+                      BIGINT,
+                      Ref{Cdouble},
+                      Ref{Cdouble},            
+                      Ref{Cdouble},            
+                      Ref{ComplexF64},
+                      Cint,
+                      Cdouble,
+                      BIGINT,
+                      BIGINT,
+                      BIGINT,
+                      Ref{ComplexF64},
+                      Ref{nufft_opts}),
+                     ntrans, nj, xj, yj, zj, cj, iflag, eps, ms, mt, mu, fk, opts
+                     )
+    end
     check_ret(ret)
 end
 
@@ -895,34 +1147,66 @@ function nufft3d3!(xj      :: Array{Float64},
                    fk      :: Array{ComplexF64},
                    opts    :: nufft_opts = finufft_default_opts())
     nj = length(xj)
+    ndim = ndims(fk)
+    @assert ndim==1 || ndim==2
+    if ndim==1
+        ntrans = 1
+        nk = length(fk)
+    else
+        nk, ntrans = size(fk)
+    end
     @assert length(yj)==nj
     @assert length(zj)==nj    
-    @assert length(cj)==nj
+    @assert length(cj)==nj*ntrans
     nk = length(sk)
     @assert length(tk)==nk
     @assert length(uk)==nk    
-    @assert length(fk)==nk    
+    @assert length(fk)==nk*ntrans
     # Calling interface
     # int finufft3d3(BIGINT nj,FLT* x,FLT *y,FLT *z, CPX* cj,int iflag,
     #                FLT eps,BIGINT nk,FLT* s, FLT* t, FLT *u,
     #                CPX* fk, nufft_opts* opts);
-    ret = ccall( (:finufft3d3, libfinufft),
-                 Cint,
-                 (BIGINT,
-                  Ref{Cdouble},
-                  Ref{Cdouble},
-                  Ref{Cdouble},                  
-                  Ref{ComplexF64},
-                  Cint,
-                  Cdouble,
-                  BIGINT,
-                  Ref{Cdouble},
-                  Ref{Cdouble},
-                  Ref{Cdouble},                        
-                  Ref{ComplexF64},
-                  Ref{nufft_opts}),
-                 nj, xj, yj, zj, cj, iflag, eps, nk, sk, tk, uk, fk, opts
-                 )
+    # or
+    # int finufft3d3many(int ntrans, BIGINT nj,FLT* x,FLT *y,FLT *z, CPX* cj,int iflag,
+    #                FLT eps,BIGINT nk,FLT* s, FLT* t, FLT *u,
+    #                CPX* fk, nufft_opts* opts);
+    if ntrans==1
+        ret = ccall( (:finufft3d3, libfinufft),
+                     Cint,
+                     (BIGINT,
+                      Ref{Cdouble},
+                      Ref{Cdouble},
+                      Ref{Cdouble},                  
+                      Ref{ComplexF64},
+                      Cint,
+                      Cdouble,
+                      BIGINT,
+                      Ref{Cdouble},
+                      Ref{Cdouble},
+                      Ref{Cdouble},                        
+                      Ref{ComplexF64},
+                      Ref{nufft_opts}),
+                     nj, xj, yj, zj, cj, iflag, eps, nk, sk, tk, uk, fk, opts
+                     )
+    else
+        ret = ccall( (:finufft3d3many, libfinufft),
+                     Cint,
+                     (Cint,
+                      BIGINT,
+                      Ref{Cdouble},
+                      Ref{Cdouble},
+                      Ref{Cdouble},                  
+                      Ref{ComplexF64},
+                      Cint,
+                      Cdouble,
+                      BIGINT,
+                      Ref{Cdouble},
+                      Ref{Cdouble},
+                      Ref{Cdouble},                        
+                      Ref{ComplexF64},
+                      Ref{nufft_opts}),
+                     ntrans, nj, xj, yj, zj, cj, iflag, eps, nk, sk, tk, uk, fk, opts
+                     )
     check_ret(ret)
 end
 
