@@ -1207,6 +1207,7 @@ function nufft3d3!(xj      :: Array{Float64},
                       Ref{nufft_opts}),
                      ntrans, nj, xj, yj, zj, cj, iflag, eps, nk, sk, tk, uk, fk, opts
                      )
+    end
     check_ret(ret)
 end
 
