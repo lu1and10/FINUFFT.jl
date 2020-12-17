@@ -58,9 +58,10 @@ k3 = modevec(mu)
             reldiff = norm(vec(out)-vec(out2), Inf) / norm(vec(out), Inf)
             @test reldiff < 1e-14
 
-            #guru1d1
+            #guru1d1 double precision
             fnull=Array{Float64}(undef,0)
             myopts = finufft_default_opts()
+            myopts.spread_debug=1
             myopts.debug=1
             myopts.upsampfac=1.25
             eps=1e-8
@@ -69,6 +70,19 @@ k3 = modevec(mu)
             outf = finufft_exec(plan,c)
             finufft_destroy(plan)
             relerr_guru = norm(vec(outf)-vec(ref), Inf) / norm(vec(outf), Inf)
+            @test relerr_guru < eps
+
+            #guru1d1 single precision
+            ffnull=Array{Float32}(undef,0)
+            myoptsf = finufftf_default_opts()
+            myoptsf.debug=1
+            myoptsf.upsampfac=1.25
+            eps=Float32(1e-5)
+            planf = finufftf_makeplan(1,1,[ms;1;1],1,1,eps,myoptsf)
+            finufftf_setpts(planf,nj,Array{Float32}(x),ffnull,ffnull,0,ffnull,ffnull,ffnull)
+            outff = finufftf_exec(planf,Array{Complex{Float32}}(c))
+            finufftf_destroy(planf)
+            relerr_guru = norm(vec(outff)-vec(ref), Inf) / norm(vec(ref), Inf)
             @test relerr_guru < eps
         end
         

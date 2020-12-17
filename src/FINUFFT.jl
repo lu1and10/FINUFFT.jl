@@ -55,15 +55,15 @@ const BIGINT = Int64 # defined in include/dataTypes.h
 ## FINUFFT opts struct from include/nufft_opts.h
 """
     mutable struct nufft_opts    
-        debug              :: Cint                
-        spread_debug       :: Cint         
-        spread_sort        :: Cint          
-        spread_kerevalmeth :: Cint   
-        spread_kerpad      :: Cint        
-        chkbnds            :: Cint              
-        fftw               :: Cint                 
+        debug              :: Cint
+        spread_debug       :: Cint
+        spread_sort        :: Cint
+        spread_kerevalmeth :: Cint
+        spread_kerpad      :: Cint
+        chkbnds            :: Cint
+        fftw               :: Cint
         modeord            :: Cint
-        upsampfac          :: Cdouble         
+        upsampfac          :: Cdouble
         spread_thread      :: Cint
         maxbatchsize       :: Cint
         nthreads           :: Cint
@@ -118,19 +118,19 @@ if >=0, threads above which spreader OMP critical goes atomic
 if >0, overrides spreader (dir=1) max subproblem size
 """
 mutable struct nufft_opts    
-    debug              :: Cint                
-    spread_debug       :: Cint         
-    spread_sort        :: Cint          
-    spread_kerevalmeth :: Cint   
-    spread_kerpad      :: Cint        
-    chkbnds            :: Cint              
-    fftw               :: Cint                 
     modeord            :: Cint
-    upsampfac          :: Cdouble         
+    chkbnds            :: Cint
+    debug              :: Cint
+    spread_debug       :: Cint
+    showwarn           :: Cint
+    nthreads           :: Cint
+    fftw               :: Cint
+    spread_sort        :: Cint
+    spread_kerevalmeth :: Cint
+    spread_kerpad      :: Cint
+    upsampfac          :: Cdouble
     spread_thread      :: Cint
     maxbatchsize       :: Cint
-    nthreads           :: Cint
-    showwarn           :: Cint
     spread_nthr_atomic :: Cint
     spread_max_sp_size :: Cint
 end
@@ -237,20 +237,17 @@ function finufft_makeplan(type::Integer,
                           ntrans::Integer,
                           eps::Float64,
                           opts::nufft_opts=finufft_default_opts())
-    plan = finufft_plan()
-    ret = ccall( (:finufft_makeplan, libfinufft),
-                 Cint,
+    plan = ccall( (:finufft_plan_alloc, libfinufft),
+                 finufft_plan,
                  (Cint,
                   Cint,
                   Ref{BIGINT},
                   Cint,
                   Cint,
                   Cdouble,
-                  Ref{finufft_plan},
                   Ref{nufft_opts}),
-                 type,dim,n_modes,iflag,ntrans,eps,plan,opts
+                 type,dim,n_modes,iflag,ntrans,eps,opts
                  )
-    check_ret(ret)
     return plan
 end
 
@@ -315,7 +312,7 @@ function finufft_exec(plan::finufft_plan,
             ret = ERR_NDIM
             check_ret(ret)
         end
-        ret = ccall( (:finufft_exec, libfinufft),
+        ret = ccall( (:finufft_execute, libfinufft),
                      Cint,
                      (finufft_plan,
                       Ref{ComplexF64},
@@ -376,20 +373,17 @@ function finufftf_makeplan(type::Integer,
                           ntrans::Integer,
                           eps::Float32,
                           opts::nufft_opts=finufftf_default_opts())
-    plan = finufftf_plan()
-    ret = ccall( (:finufftf_makeplan, libfinufft),
-                 Cint,
+    plan = ccall( (:finufftf_plan_alloc, libfinufft),
+                 finufftf_plan,
                  (Cint,
                   Cint,
                   Ref{BIGINT},
                   Cint,
                   Cint,
                   Cfloat,
-                  Ref{finufftf_plan},
                   Ref{nufft_opts}),
-                 type,dim,n_modes,iflag,ntrans,eps,plan,opts
+                 type,dim,n_modes,iflag,ntrans,eps,opts
                  )
-    check_ret(ret)
     return plan
 end
 
@@ -454,7 +448,7 @@ function finufftf_exec(plan::finufftf_plan,
             ret = ERR_NDIM
             check_ret(ret)
         end
-        ret = ccall( (:finufftf_exec, libfinufft),
+        ret = ccall( (:finufftf_execute, libfinufft),
                      Cint,
                      (finufftf_plan,
                       Ref{ComplexF32},
@@ -468,7 +462,7 @@ function finufftf_exec(plan::finufftf_plan,
                     plan
                     )
         output = Array{ComplexF32}(undef,nj,ntrans)
-        ret = ccall( (:finufftf_exec, libfinufft),
+        ret = ccall( (:finufftf_execute, libfinufft),
                      Cint,
                      (finufftf_plan,
                       Ref{ComplexF32},
@@ -482,7 +476,7 @@ function finufftf_exec(plan::finufftf_plan,
                     plan
                     )
         output = Array{ComplexF32}(undef,nk,ntrans)
-        ret = ccall( (:finufftf_exec, libfinufft),
+        ret = ccall( (:finufftf_execute, libfinufft),
                      Cint,
                      (finufftf_plan,
                       Ref{ComplexF32},
