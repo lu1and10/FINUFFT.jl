@@ -75,7 +75,7 @@ end
 
 # "FFTWOMPSUFFIX=threads" because Conda doesn't supply libfftw3_omp 
 if Sys.KERNEL == :Darwin
-    buildcmd = `cp make.inc.macosx_gcc-8 make.inc && make lib`
+    buildcmd = `cp make.inc.macosx_gcc-8 make.inc '&&' make lib`
 elseif Sys.iswindows()
     buildcmd = `make lib OMP=OFF LIBRARY_PATH=$lib CPATH=$inc`
 else
