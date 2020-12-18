@@ -56,11 +56,11 @@ end
 libfinufft = library_dependency("libfinufft")
 
 provides(Sources,
-        URI("https://github.com/flatironinstitute/finufft/archive/master.zip"),
+        URI("https://github.com/lu1and10/finufft/archive/julia.zip"),
          libfinufft,
-         unpacked_dir = "finufft-master")
+         unpacked_dir = "finufft-julia")
 
-rootdir = joinpath(BinDeps.srcdir(libfinufft), "finufft-master")
+rootdir = joinpath(BinDeps.srcdir(libfinufft), "finufft-julia")
 libname = "libfinufft.so"
 libfile = joinpath(BinDeps.libdir(libfinufft),libname)
 buildfile = joinpath(rootdir, "lib", libname)
@@ -75,7 +75,7 @@ end
 
 # "FFTWOMPSUFFIX=threads" because Conda doesn't supply libfftw3_omp 
 if Sys.KERNEL == :Darwin
-    buildcmd = `make lib/libfinufft.so LIBRARY_PATH=$lib CPATH=$inc FFTWOMPSUFFIX=threads CXX=g++ CC=gcc`
+    buildcmd = `make lib/libfinufft.so LIBRARY_PATH=$lib CPATH=$inc FFTWOMPSUFFIX=threads CXX=g++-8 CC=gcc-8`
 elseif Sys.iswindows()
     buildcmd = `make lib OMP=OFF LIBRARY_PATH=$lib CPATH=$inc`
 else
